@@ -406,7 +406,7 @@
 
     <!-- Loading Screen -->
     <div class="loading-screen" id="loadingScreen">
-        <div class="loading-logo">GHAZI&nbsp;OTT</div>
+        <div class="loading-logo">HR&nbsp;OTT</div>
         <div class="loading-bar-container"><div class="loading-bar-fill"></div></div>
     </div>
 
@@ -472,7 +472,7 @@
     <button class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></button>
 
     <footer>
-        <p>© 2026 GHAZI OTT — Watch Movies & Series.</p>
+        <p>© 2026 HR OTT — Watch Movies & Series.</p>
         <div class="developer-credits">
             <div class="dev-line">Developed by <span>Your Name</span></div>
             <div class="taught-line">Taught by <span>Your Teacher/Mentor</span></div>
@@ -545,11 +545,11 @@
             let wallState = null;
 
             function loadStorage() {
-                try { watchlist=JSON.parse(localStorage.ghazi_wl||'[]'); recent=JSON.parse(localStorage.ghazi_rec||'[]'); }
+                try { watchlist=JSON.parse(localStorage.HR_wl||'[]'); recent=JSON.parse(localStorage.HR_rec||'[]'); }
                 catch(e){ watchlist=[]; recent=[]; }
             }
-            function saveWl(){ localStorage.ghazi_wl = JSON.stringify(watchlist); }
-            function saveRec(){ localStorage.ghazi_rec = JSON.stringify(recent); }
+            function saveWl(){ localStorage.HR_wl = JSON.stringify(watchlist); }
+            function saveRec(){ localStorage.HR_rec = JSON.stringify(recent); }
 
             async function tmdbFetch(endpoint) {
                 const sep = endpoint.includes('?')?'&':'?';
