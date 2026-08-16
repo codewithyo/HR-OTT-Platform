@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>HR OTT — Watch Now</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -75,9 +76,7 @@
             transition: transform 0.2s ease;
         }
 
-        .nav-logo:hover {
-            transform: scale(1.05);
-        }
+        .nav-logo:hover { transform: scale(1.05); }
 
         .nav-right {
             margin-left: auto;
@@ -102,10 +101,7 @@
             cursor: pointer;
         }
 
-        .btn-back:hover {
-            background: var(--red);
-            border-color: var(--red);
-        }
+        .btn-back:hover { background: var(--red); border-color: var(--red); }
 
         .profile-avatar {
             width: 36px;
@@ -202,11 +198,9 @@
             text-transform: uppercase;
         }
 
-        .server-btn.active .server-badge {
-            background: rgba(255,255,255,0.3);
-        }
+        .server-btn.active .server-badge { background: rgba(255,255,255,0.3); }
 
-        /* ── Player Container (16:9 Aspect Ratio) ── */
+        /* ── Player Container ── */
         .player-container {
             width: 100%;
             background: #000;
@@ -220,7 +214,19 @@
             height: 0;
         }
 
-        .player-placeholder {
+        .player-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            border: none;
+            background: #000;
+        }
+
+        /* ── Loading State ── */
+        .player-loading {
             position: absolute;
             inset: 0;
             display: flex;
@@ -230,70 +236,34 @@
             gap: 20px;
             background: linear-gradient(135deg, #1a1a1f 0%, #2a2a32 100%);
             z-index: 10;
+            transition: opacity 0.4s ease;
         }
 
-        .player-placeholder.hidden {
-            display: none;
+        .player-loading.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .play-icon {
-            width: 80px;
-            height: 80px;
-            background: var(--red);
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(229, 9, 20, 0.2);
+            border-top-color: var(--red);
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            color: white;
-            box-shadow: 0 8px 30px var(--red-glow);
-            animation: pulse 2s ease-in-out infinite;
+            animation: spin 1.2s linear infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .placeholder-text {
-            font-size: 1.2rem;
+        .loading-text {
+            font-size: 1rem;
             font-weight: 700;
             color: var(--text);
-            text-align: center;
         }
 
-        .placeholder-subtext {
-            font-size: 0.9rem;
+        .loading-subtext {
+            font-size: 0.85rem;
             color: var(--text-muted);
-            text-align: center;
-            max-width: 300px;
-        }
-
-        .play-button-main {
-            padding: 14px 40px;
-            background: var(--red);
-            border: none;
-            color: white;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .play-button-main:hover {
-            background: var(--red-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px var(--red-glow);
-        }
-
-        .play-button-main.loading {
-            opacity: 0.7;
-            pointer-events: none;
         }
 
         /* ── Details Section ── */
@@ -328,9 +298,7 @@
             transition: transform 0.3s ease;
         }
 
-        .poster:hover img {
-            transform: scale(1.03);
-        }
+        .poster:hover img { transform: scale(1.03); }
 
         .info {
             display: flex;
@@ -357,16 +325,8 @@
             font-size: 0.95rem;
         }
 
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .meta-item.match {
-            color: var(--green);
-            font-weight: 700;
-        }
+        .meta-item { display: flex; align-items: center; gap: 4px; }
+        .meta-item.match { color: var(--green); font-weight: 700; }
 
         .maturity-badge {
             border: 1px solid rgba(255,255,255,0.4);
@@ -449,23 +409,12 @@
         }
 
         @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
-        .toast.error {
-            border-left-color: #ff6b6b;
-        }
-
-        .toast.success {
-            border-left-color: var(--green);
-        }
+        .toast.error { border-left-color: #ff6b6b; }
+        .toast.success { border-left-color: var(--green); }
 
         /* ── Footer ── */
         footer {
@@ -495,103 +444,29 @@
                 align-items: center;
             }
 
-            .meta-row {
-                justify-content: center;
-            }
-
-            .genres-row {
-                justify-content: center;
-            }
+            .meta-row { justify-content: center; }
+            .genres-row { justify-content: center; }
         }
 
         @media (max-width: 768px) {
-            .player-wrapper {
-                padding-top: 90px;
-            }
-
-            .nav {
-                padding: 14px 16px;
-            }
-
-            .nav.scrolled {
-                padding: 10px 16px;
-            }
-
-            .nav-logo {
-                font-size: 1.4rem;
-            }
-
-            .btn-back {
-                font-size: 0.8rem;
-                padding: 8px 12px;
-            }
-
-            .info-title {
-                font-size: 1.8rem;
-            }
-
-            .server-btn {
-                padding: 8px 16px;
-                font-size: 0.8rem;
-            }
-
-            .server-badge {
-                font-size: 0.55rem;
-            }
-
-            .play-icon {
-                width: 60px;
-                height: 60px;
-                font-size: 30px;
-            }
-
-            .placeholder-text {
-                font-size: 1rem;
-            }
-
-            .play-button-main {
-                padding: 12px 30px;
-                font-size: 0.9rem;
-            }
+            .player-wrapper { padding-top: 90px; }
+            .nav { padding: 14px 16px; }
+            .nav.scrolled { padding: 10px 16px; }
+            .nav-logo { font-size: 1.4rem; }
+            .btn-back { font-size: 0.8rem; padding: 8px 12px; }
+            .info-title { font-size: 1.8rem; }
+            .server-btn { padding: 8px 16px; font-size: 0.8rem; }
+            .server-badge { font-size: 0.55rem; }
         }
 
         @media (max-width: 480px) {
-            .nav-right {
-                gap: 8px;
-            }
-
-            .btn-back span {
-                display: none;
-            }
-
-            .server-tabs {
-                gap: 6px;
-            }
-
-            .server-btn {
-                padding: 7px 12px;
-                font-size: 0.75rem;
-            }
-
-            .info-title {
-                font-size: 1.4rem;
-            }
-
-            .meta-row {
-                font-size: 0.85rem;
-                gap: 10px;
-            }
-
-            .genre-tag {
-                padding: 4px 10px;
-                font-size: 0.7rem;
-            }
-
-            .play-icon {
-                width: 50px;
-                height: 50px;
-                font-size: 24px;
-            }
+            .nav-right { gap: 8px; }
+            .btn-back span { display: none; }
+            .server-tabs { gap: 6px; }
+            .server-btn { padding: 7px 12px; font-size: 0.75rem; }
+            .info-title { font-size: 1.4rem; }
+            .meta-row { font-size: 0.85rem; gap: 10px; }
+            .genre-tag { padding: 4px 10px; font-size: 0.7rem; }
         }
     </style>
 </head>
@@ -621,16 +496,10 @@
 
         <!-- Video Player Container -->
         <div class="player-container" id="playerContainer">
-            <div class="player-placeholder" id="playerPlaceholder">
-                <div class="play-icon">
-                    <i class="fas fa-play"></i>
-                </div>
-                <div class="placeholder-text">Ready to Play</div>
-                <div class="placeholder-subtext">Select a server and click play to start streaming</div>
-                <button class="play-button-main" id="playButtonMain">
-                    <i class="fas fa-play-circle"></i>
-                    Play Now
-                </button>
+            <div class="player-loading" id="playerLoading">
+                <div class="spinner"></div>
+                <div class="loading-text">Loading Player</div>
+                <div class="loading-subtext" id="loadingSubtext">Initializing stream...</div>
             </div>
         </div>
 
@@ -644,11 +513,8 @@
 
             <div class="info">
                 <h1 class="info-title" id="titleText">Loading...</h1>
-
                 <div class="meta-row" id="metaRow"></div>
-
                 <div class="genres-row" id="genresRow"></div>
-
                 <p class="overview-text" id="overviewText"></p>
 
                 <div class="detail-section">
@@ -666,7 +532,7 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2026 HR OTT — Stream Movies & Series. Powered by TMDB & VidSrc.</p>
+        <p>&copy; 2026 HR OTT — Stream Movies & Series. Powered by TMDB & VsEmbed.</p>
     </footer>
 
     <script>
@@ -683,68 +549,195 @@
             const season = params.get('s') || '1';
             const episode = params.get('e') || '1';
 
-            // Validate ID
             if (!mediaId) {
                 document.querySelector('.info-title').textContent = 'Error: Invalid URL';
                 document.getElementById('overviewText').textContent = 'No media ID provided. Please go back and select a title.';
                 throw new Error('No media ID in URL');
             }
 
+            // ═══════ State Variables ═══════
+            let imdbId = null;
+            let currentSource = 'vsembed';
+            let adBlockerActive = true;
+
             // ═══════ Stream Sources Configuration ═══════
             const streamSources = {
-                vidsrc: {
-                    name: 'VidSrc',
+                vsembed: {
+                    name: 'VsEmbed',
                     badge: 'Recommended',
                     priority: 1,
                     getUrl: () => {
-                        if (mediaType === 'tv') {
-                            return `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`;
-                        } else {
-                            return `https://vidsrc.to/embed/movie/${mediaId}`;
-                        }
+                        if (!imdbId && mediaType === 'movie') return `https://vsembed.ru/embed/movie/${mediaId}`;
+                        if (!imdbId && mediaType === 'tv') return `https://vsembed.ru/embed/tv/${mediaId}/${season}/${episode}`;
+                        if (mediaType === 'tv') return `https://vsembed.ru/embed/tv/${imdbId}/${season}/${episode}`;
+                        return `https://vsembed.ru/embed/movie/${imdbId}`;
                     }
                 },
-                vidsrc2: {
-                    name: 'VidSrc Prime',
-                    badge: 'HD',
+                vidsrc: {
+                    name: 'VidSrc',
+                    badge: 'Quality',
                     priority: 2,
                     getUrl: () => {
-                        if (mediaType === 'tv') {
-                            return `https://vidsrc.me/embed/tv?tmdb=${mediaId}&season=${season}&episode=${episode}`;
-                        } else {
-                            return `https://vidsrc.me/embed/movie?tmdb=${mediaId}`;
-                        }
+                        if (mediaType === 'tv') return `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`;
+                        return `https://vidsrc.to/embed/movie/${mediaId}`;
                     }
                 },
-                videasy: {
-                    name: 'Videasy',
-                    badge: 'Fast',
+                vidsrcme: {
+                    name: 'VidSrc.me',
+                    badge: 'HD',
                     priority: 3,
                     getUrl: () => {
-                        if (mediaType === 'tv') {
-                            return `https://player.videasy.net/tv/${mediaId}/${season}/${episode}?overlay=true&color=E50914&nextEpisode=true&episodeSelector=true`;
-                        } else {
-                            return `https://player.videasy.net/movie/${mediaId}?overlay=true&color=E50914`;
-                        }
-                    }
-                },
-                embed: {
-                    name: 'Embed.su',
-                    badge: 'Alt',
-                    priority: 4,
-                    getUrl: () => {
-                        if (mediaType === 'tv') {
-                            return `https://embed.su/embed/tv/${mediaId}/${season}/${episode}`;
-                        } else {
-                            return `https://embed.su/embed/movie/${mediaId}`;
-                        }
+                        if (mediaType === 'tv') return `https://vidsrc.me/embed/tv?tmdb=${mediaId}&season=${season}&episode=${episode}`;
+                        return `https://vidsrc.me/embed/movie?tmdb=${mediaId}`;
                     }
                 }
             };
 
-            // ═══════ Player State ═══════
-            let currentSource = 'vidsrc';
-            let playerWindow = null;
+            // ═══════ Ad Blocking System ═══════
+            class AdBlocker {
+                constructor() {
+                    this.adPatterns = [
+                        'ad', 'advertisement', 'banner', 'popup', 'modal',
+                        'ads', 'advert', 'sponsor', 'promo', 'overlay'
+                    ];
+                    this.adDomains = [
+                        'googlesyndication.com', 'googleadservices.com', 'doubleclick.net',
+                        'ads.google.com', 'pagead2.googlesyndication.com', 'adservice.google.com'
+                    ];
+                }
+
+                injectBlockingCSS(iframe) {
+                    try {
+                        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                        if (!doc) return;
+
+                        const style = doc.createElement('style');
+                        style.textContent = `
+                            /* Block common ad elements */
+                            [class*="ad"], [id*="ad"],
+                            [class*="advertisement"], [id*="advertisement"],
+                            [class*="banner"], [id*="banner"],
+                            [class*="popup"], [id*="popup"],
+                            [class*="modal"], [id*="modal"],
+                            [class*="overlay"], [id*="overlay"],
+                            [class*="sponsor"], [id*="sponsor"],
+                            [class*="promotion"], [id*="promotion"],
+                            [data-ad-slot], [data-ad-client],
+                            .advertisement, #advertisement,
+                            .ad-container, #ad-container,
+                            .advert, #advert,
+                            ins[class*="adsbygoogle"],
+                            .player-ad, #player-ad,
+                            .ad-banner, #ad-banner,
+                            .ad-overlay, #ad-overlay
+                            { 
+                                display: none !important; 
+                                visibility: hidden !important;
+                                width: 0 !important;
+                                height: 0 !important;
+                            }
+
+                            /* Allow video content */
+                            video, [class*="player"], [class*="video"] {
+                                display: block !important;
+                                visibility: visible !important;
+                            }
+
+                            /* Unblock body */
+                            body { 
+                                overflow: auto !important; 
+                                pointer-events: auto !important;
+                            }
+                        `;
+                        doc.head.appendChild(style);
+                    } catch (e) {
+                        console.log('CSS injection blocked (CORS)');
+                    }
+                }
+
+                blockAdAPIs(iframe) {
+                    try {
+                        const win = iframe.contentWindow;
+                        if (!win) return;
+
+                        // Block Google Ad APIs
+                        win.googletag = {
+                            cmd: [],
+                            display: () => {},
+                            pubads: () => ({ enableSingleRequest: () => {}, disableInitialLoad: () => {} })
+                        };
+                        win.adsbygoogle = [];
+                        win.__gads = undefined;
+                        win.__gpt = undefined;
+
+                        // Block common ad networks
+                        win.GA_googleAddAttr = undefined;
+                        win.GA_googleGetAttr = undefined;
+
+                    } catch (e) {
+                        console.log('API blocking blocked (CORS)');
+                    }
+                }
+
+                monitorAndBlock(iframe) {
+                    try {
+                        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                        if (!doc) return;
+
+                        const observer = new MutationObserver((mutations) => {
+                            mutations.forEach((mutation) => {
+                                if (mutation.addedNodes.length) {
+                                    mutation.addedNodes.forEach((node) => {
+                                        if (node.nodeType === 1) { // Element node
+                                            const element = node;
+                                            
+                                            // Check class and id
+                                            const classList = (element.className || '').toLowerCase();
+                                            const elementId = (element.id || '').toLowerCase();
+                                            
+                                            for (let pattern of this.adPatterns) {
+                                                if (classList.includes(pattern) || elementId.includes(pattern)) {
+                                                    element.style.display = 'none';
+                                                    element.style.visibility = 'hidden';
+                                                    break;
+                                                }
+                                            }
+
+                                            // Check for ad-related attributes
+                                            if (element.hasAttribute('data-ad-slot') || 
+                                                element.hasAttribute('data-ad-client') ||
+                                                element.getAttribute('data-type') === 'ad') {
+                                                element.style.display = 'none';
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+                        });
+
+                        observer.observe(doc.body, {
+                            childList: true,
+                            subtree: true,
+                            attributes: true,
+                            attributeFilter: ['class', 'id', 'data-ad-slot', 'data-ad-client']
+                        });
+
+                    } catch (e) {
+                        console.log('Mutation observer blocked (CORS)');
+                    }
+                }
+
+                apply(iframe) {
+                    this.injectBlockingCSS(iframe);
+                    this.blockAdAPIs(iframe);
+                    
+                    // Wait for iframe content to load, then monitor
+                    setTimeout(() => this.monitorAndBlock(iframe), 500);
+                    setTimeout(() => this.monitorAndBlock(iframe), 1500);
+                }
+            }
+
+            const adBlocker = new AdBlocker();
 
             // ═══════ Toast Notification ═══════
             function showToast(message, type = 'success') {
@@ -762,37 +755,85 @@
                 }, 3000);
             }
 
-            // ═══════ Open Player in New Window ═══════
-            function openPlayerWindow(sourceKey) {
+            // ═══════ Load Player Embed ═══════
+            function loadPlayerEmbed(sourceKey) {
                 if (!streamSources[sourceKey]) return;
 
                 currentSource = sourceKey;
                 const source = streamSources[sourceKey];
                 const url = source.getUrl();
 
-                // Close existing player window if open
-                if (playerWindow && !playerWindow.closed) {
-                    playerWindow.close();
-                }
+                // Remove old iframe
+                const oldIframe = document.querySelector('.player-container iframe');
+                if (oldIframe) oldIframe.remove();
 
-                // Window options for better user experience
-                const windowOptions = 'width=1280,height=720,menubar=no,toolbar=no,location=yes,status=no,scrollbars=yes,resizable=yes,top=50,left=50';
+                // Show loading
+                const loading = document.getElementById('playerLoading');
+                document.getElementById('loadingSubtext').textContent = `Loading ${source.name}...`;
+                loading.classList.remove('hidden');
 
-                // Open new window with player URL
-                playerWindow = window.open(url, '_blank', windowOptions);
+                // Create new iframe
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                iframe.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture; accelerometer';
+                iframe.setAttribute('loading', 'lazy');
+                iframe.setAttribute('referrerpolicy', 'no-referrer');
 
-                if (playerWindow) {
-                    // Focus the new window
-                    playerWindow.focus();
-                    showToast(`Opening ${source.name} in new window...`, 'success');
+                iframe.onload = () => {
+                    loading.classList.add('hidden');
+                    
+                    // Apply ad blocker
+                    adBlocker.apply(iframe);
+                    
+                    showToast(`Playing with ${source.name} (Ad-Blocking Active)`, 'success');
+                };
 
-                    // Update active button
-                    document.querySelectorAll('.server-btn').forEach(btn => {
-                        btn.classList.toggle('active', btn.dataset.source === sourceKey);
-                    });
-                } else {
-                    // Popup was blocked
-                    showToast('Popup blocked by browser. Please enable popups for this site.', 'error');
+                iframe.onerror = () => {
+                    showToast(`Failed to load ${source.name}`, 'error');
+                };
+
+                // Timeout fallback
+                setTimeout(() => {
+                    if (!loading.classList.contains('hidden')) {
+                        loading.classList.add('hidden');
+                        adBlocker.apply(iframe);
+                    }
+                }, 5000);
+
+                document.getElementById('playerContainer').appendChild(iframe);
+
+                // Update button state
+                document.querySelectorAll('.server-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.source === sourceKey);
+                });
+            }
+
+            // ═══════ Fetch IMDB ID from TMDB ═══════
+            async function fetchImdbId() {
+                try {
+                    const endpoint = mediaType === 'movie' 
+                        ? `/movie/${mediaId}?external_ids`
+                        : `/tv/${mediaId}?external_ids`;
+
+                    const sep = endpoint.includes('?') ? '&' : '?';
+                    const url = TMDB_BASE + endpoint + sep + 'api_key=' + TMDB_KEY;
+
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error('TMDB external_ids fetch failed');
+
+                    const data = await res.json();
+                    
+                    // Get IMDB ID from external_ids
+                    if (data.external_ids?.imdb_id) {
+                        imdbId = data.external_ids.imdb_id;
+                        console.log('IMDB ID found:', imdbId);
+                        return imdbId;
+                    }
+
+                    return null;
+                } catch (error) {
+                    console.log('Could not fetch IMDB ID, using TMDB ID instead:', error);
+                    return null;
                 }
             }
 
@@ -805,37 +846,20 @@
                     .sort((a, b) => a[1].priority - b[1].priority)
                     .forEach(([key, source]) => {
                         const btn = document.createElement('button');
-                        btn.className = `server-btn ${key === 'vidsrc' ? 'active' : ''}`;
+                        btn.className = `server-btn ${key === 'vsembed' ? 'active' : ''}`;
                         btn.dataset.source = key;
                         btn.innerHTML = `${source.name} <span class="server-badge">${source.badge}</span>`;
-                        btn.addEventListener('click', () => openPlayerWindow(key));
+                        btn.addEventListener('click', () => loadPlayerEmbed(key));
                         tabsContainer.appendChild(btn);
                     });
-            }
-
-            // ═══════ Play Button Handler ═══════
-            function setupPlayButton() {
-                const playBtn = document.getElementById('playButtonMain');
-                const placeholder = document.getElementById('playerPlaceholder');
-
-                playBtn.addEventListener('click', () => {
-                    playBtn.classList.add('loading');
-                    playBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening...';
-
-                    setTimeout(() => {
-                        openPlayerWindow(currentSource);
-                        playBtn.classList.remove('loading');
-                        playBtn.innerHTML = '<i class="fas fa-play-circle"></i> Play Now';
-                    }, 300);
-                });
             }
 
             // ═══════ Fetch Media Details ═══════
             async function fetchMediaDetails() {
                 try {
                     const endpoint = mediaType === 'movie'
-                        ? `/movie/${mediaId}?append_to_response=credits`
-                        : `/tv/${mediaId}?append_to_response=credits`;
+                        ? `/movie/${mediaId}?append_to_response=credits,external_ids`
+                        : `/tv/${mediaId}?append_to_response=credits,external_ids`;
 
                     const sep = endpoint.includes('?') ? '&' : '?';
                     const url = TMDB_BASE + endpoint + sep + 'api_key=' + TMDB_KEY;
@@ -844,6 +868,11 @@
                     if (!res.ok) throw new Error('TMDB API Error');
 
                     const data = await res.json();
+
+                    // Get IMDB ID if available
+                    if (data.external_ids?.imdb_id) {
+                        imdbId = data.external_ids.imdb_id;
+                    }
 
                     // Extract data
                     const title = data.title || data.name || 'Untitled';
@@ -880,6 +909,9 @@
                     const genresHtml = genres.map(g => `<div class="genre-tag">${g.name}</div>`).join('');
                     document.getElementById('genresRow').innerHTML = genresHtml || '<div class="genre-tag">N/A</div>';
 
+                    // Auto-load first server
+                    loadPlayerEmbed('vsembed');
+
                 } catch (error) {
                     console.error('Fetch error:', error);
                     showToast('Failed to load media details', 'error');
@@ -893,28 +925,12 @@
 
             // ═══════ Keyboard Shortcuts ═══════
             document.addEventListener('keydown', (e) => {
-                // 1-4 keys to switch servers
-                const keys = { '1': 'vidsrc', '2': 'vidsrc2', '3': 'videasy', '4': 'embed' };
-                if (keys[e.key]) {
-                    openPlayerWindow(keys[e.key]);
-                }
-                // Space or Enter to play
-                if ((e.code === 'Space' || e.key === 'Enter') && e.target === document.body) {
-                    e.preventDefault();
-                    document.getElementById('playButtonMain').click();
-                }
+                const keys = { '1': 'vsembed', '2': 'vidsrc', '3': 'vidsrcme' };
+                if (keys[e.key]) loadPlayerEmbed(keys[e.key]);
             });
-
-            // ═══════ Close player window listener ═══════
-            setInterval(() => {
-                if (playerWindow && playerWindow.closed) {
-                    playerWindow = null;
-                }
-            }, 1000);
 
             // ═══════ Initialize ═══════
             initServerButtons();
-            setupPlayButton();
             fetchMediaDetails();
 
         })();
