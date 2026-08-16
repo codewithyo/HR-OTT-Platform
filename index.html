@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HR OTT — Platform</title>
+<title>MARQUEE — Movies Worth the Marquee</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
 
@@ -257,7 +257,7 @@
 
   <nav class="nav" id="nav">
     <div class="nav-left">
-      <div class="logo">HR OTT</div>
+      <div class="logo">MARQUEE</div>
       <ul class="nav-links">
         <li><a href="#hero">Home</a></li>
         <li><a href="#row-trending">Trending</a></li>
@@ -270,7 +270,7 @@
         <span class="search-icon">⌕</span>
         <input class="search-input" id="searchInput" type="text" placeholder="Search movies…" autocomplete="off">
       </div>
-      <div class="avatar">H</div>
+      <div class="avatar">M</div>
     </div>
   </nav>
 
@@ -387,6 +387,7 @@
 
   let genreMap = {};
   let currentHeroId = null;
+  let currentHeroTitle = null;
 
   function escapeHtml(str){
     return (str||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -508,8 +509,14 @@
     }
   }
 
+  function watchNow(movieId, movieTitle){
+    const url = `player.html?type=movie&id=${encodeURIComponent(movieId)}&title=${encodeURIComponent(movieTitle || '')}`;
+    window.open(url, '_blank', 'noopener');
+  }
+
   function setupHero(movie){
     currentHeroId = movie.id;
+    currentHeroTitle = movie.title;
     const backdrop = document.getElementById('heroBackdrop');
     backdrop.style.backgroundImage = `url(${IMG_ORIG}${movie.backdrop_path || movie.poster_path})`;
     backdrop.classList.add('loaded');
@@ -529,19 +536,20 @@
     document.getElementById('heroContent').classList.add('in');
   }
 
+  document.getElementById('heroWatchBtn').addEventListener('click', () => {
+    if(currentHeroId) watchNow(currentHeroId, currentHeroTitle);
+  });
   document.getElementById('heroPlayBtn').addEventListener('click', () => {
-    if(currentHeroId) playTrailer(currentHeroId, document.getElementById('heroTitle').textContent);
+    if(currentHeroId) playTrailer(currentHeroId, currentHeroTitle);
   });
   document.getElementById('heroInfoBtn').addEventListener('click', () => {
     if(currentHeroId) openModal(currentHeroId);
-  });
-  document.getElementById('heroWatchBtn').addEventListener('click', () => {
-    toggleProviderPanel(document.getElementById('heroProviders'), currentHeroId);
   });
 
   // ---------- MODAL ----------
   const modalBackdrop = document.getElementById('modalBackdrop');
   let currentModalId = null;
+  let currentModalTitle = null;
 
   async function openModal(id){
     currentModalId = id;
@@ -555,6 +563,7 @@
 
     try{
       const movie = await fetchJSON(`/movie/${id}`);
+      currentModalTitle = movie.title;
       document.getElementById('modalBackdropImg').src = `${IMG_ORIG}${movie.backdrop_path || movie.poster_path}`;
       document.getElementById('modalTitle').textContent = movie.title;
       document.getElementById('modalYear').textContent = (movie.release_date || '').slice(0, 4) || '—';
@@ -564,6 +573,9 @@
         .map(g => `<span class="genre-pill">${escapeHtml(g.name)}</span>`).join('');
       document.getElementById('modalOverview').textContent = movie.overview || 'No overview available.';
 
+      const watchBtn = document.getElementById('modalWatchBtn');
+      watchBtn.onclick = () => watchNow(movie.id, movie.title);
+
       const trailerBtn = document.getElementById('modalTrailerBtn');
       trailerBtn.onclick = () => playTrailer(movie.id, movie.title);
     }catch(err){
@@ -571,10 +583,6 @@
       document.getElementById('modalOverview').textContent = 'Couldn\'t load details for this title. Please try again.';
     }
   }
-
-  document.getElementById('modalWatchBtn').addEventListener('click', () => {
-    toggleProviderPanel(document.getElementById('modalProviders'), currentModalId);
-  });
 
   function closeModal(){ modalBackdrop.classList.remove('open'); }
   document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
