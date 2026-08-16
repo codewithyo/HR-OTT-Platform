@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MARQUEE — Movies Worth the Marquee</title>
+<title>HR OTT — Platform </title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
 
@@ -211,7 +211,25 @@
     background:var(--surface-2); color:var(--text-dim);
   }
   .modal-overview{color:var(--text-dim); font-size:14.5px; line-height:1.7; margin-bottom:24px;}
-  .modal-actions{display:flex; gap:12px;}
+  .modal-actions{display:flex; gap:12px; flex-wrap:wrap;}
+
+  /* ---------- WATCH PROVIDERS PANEL ---------- */
+  .provider-panel{
+    max-height:0; overflow:hidden; opacity:0;
+    transition:max-height .3s ease, opacity .3s ease, margin-top .3s ease;
+  }
+  .provider-panel.open{max-height:220px; opacity:1; margin-top:16px;}
+  .provider-group{margin-bottom:10px; display:flex; align-items:center; flex-wrap:wrap; gap:8px;}
+  .provider-label{
+    font-family:var(--font-mono); font-size:11px; color:var(--text-dim); text-transform:uppercase;
+    letter-spacing:1px; min-width:52px;
+  }
+  .provider-logo{width:32px; height:32px; border-radius:7px; display:inline-block; object-fit:cover;}
+  .provider-link{
+    display:inline-block; margin-top:4px; font-size:12.5px; color:var(--gold); text-decoration:none; font-weight:600;
+  }
+  .provider-link:hover{text-decoration:underline;}
+  .provider-credit{font-size:10.5px; color:var(--text-dim); margin-top:6px; font-family:var(--font-mono);}
 
   /* ---------- FOOTER ---------- */
   footer{
@@ -239,7 +257,7 @@
 
   <nav class="nav" id="nav">
     <div class="nav-left">
-      <div class="logo">MARQUEE</div>
+      <div class="logo">HR OTT</div>
       <ul class="nav-links">
         <li><a href="#hero">Home</a></li>
         <li><a href="#row-trending">Trending</a></li>
@@ -267,9 +285,11 @@
       <div class="hero-meta" id="heroMeta"></div>
       <p class="hero-overview" id="heroOverview"></p>
       <div class="hero-actions">
-        <button class="btn btn-primary" id="heroPlayBtn">▶ Watch Trailer</button>
+        <button class="btn btn-primary" id="heroWatchBtn">▶ Watch Now</button>
+        <button class="btn btn-secondary" id="heroPlayBtn">▶ Watch Trailer</button>
         <button class="btn btn-secondary" id="heroInfoBtn">ⓘ More Info</button>
       </div>
+      <div class="provider-panel" id="heroProviders"></div>
     </div>
   </section>
 
@@ -351,8 +371,10 @@
         <div class="genre-pills" id="modalGenres"></div>
         <p class="modal-overview" id="modalOverview"></p>
         <div class="modal-actions">
-          <button class="btn btn-primary" id="modalTrailerBtn">▶ Play Trailer</button>
+          <button class="btn btn-primary" id="modalWatchBtn">▶ Watch Now</button>
+          <button class="btn btn-secondary" id="modalTrailerBtn">▶ Play Trailer</button>
         </div>
+        <div class="provider-panel" id="modalProviders"></div>
       </div>
     </div>
   </div>
@@ -428,6 +450,44 @@
     }
   }
 
+  function providersEmptyHTML(){
+    return '<div class="row-loading">No streaming/rental info found for this title yet.</div>';
+  }
+
+  async function loadProviders(movieId, containerEl){
+    containerEl.innerHTML = '<div class="row-loading">Checking where to watch…</div>';
+    try{
+      const data = await fetchJSON(`/movie/${movieId}/watch/providers`);
+      const results = data.results || {};
+      const region = results.IN || results.US || Object.values(results)[0];
+      if(!region){ containerEl.innerHTML = providersEmptyHTML(); return; }
+
+      const groups = [['flatrate', 'Stream'], ['rent', 'Rent'], ['buy', 'Buy']];
+      let html = '';
+      groups.forEach(([key, label]) => {
+        if(region[key] && region[key].length){
+          html += `<div class="provider-group"><span class="provider-label">${label}</span>` +
+            region[key].map(p => `<img class="provider-logo" src="https://image.tmdb.org/t/p/w92${p.logo_path}" alt="${escapeHtml(p.provider_name)}" title="${escapeHtml(p.provider_name)}">`).join('') +
+            `</div>`;
+        }
+      });
+
+      if(!html){ containerEl.innerHTML = providersEmptyHTML(); return; }
+      html += `<a class="provider-link" href="${region.link}" target="_blank" rel="noopener">See all options on JustWatch →</a>
+                <div class="provider-credit">Streaming availability data by JustWatch, via TMDB</div>`;
+      containerEl.innerHTML = html;
+    }catch(err){
+      containerEl.innerHTML = providersEmptyHTML();
+    }
+  }
+
+  function toggleProviderPanel(panel, movieId){
+    const isOpen = panel.classList.contains('open');
+    if(isOpen){ panel.classList.remove('open'); return; }
+    panel.classList.add('open');
+    if(movieId) loadProviders(movieId, panel);
+  }
+
   async function findTrailerUrl(movieId){
     try{
       const data = await fetchJSON(`/movie/${movieId}/videos`);
@@ -471,11 +531,19 @@
   document.getElementById('heroInfoBtn').addEventListener('click', () => {
     if(currentHeroId) openModal(currentHeroId);
   });
+  document.getElementById('heroWatchBtn').addEventListener('click', () => {
+    toggleProviderPanel(document.getElementById('heroProviders'), currentHeroId);
+  });
 
   // ---------- MODAL ----------
   const modalBackdrop = document.getElementById('modalBackdrop');
+  let currentModalId = null;
 
   async function openModal(id){
+    currentModalId = id;
+    const modalProviders = document.getElementById('modalProviders');
+    modalProviders.classList.remove('open');
+    modalProviders.innerHTML = '';
     modalBackdrop.classList.add('open');
     document.getElementById('modalTitle').textContent = 'Loading…';
     document.getElementById('modalOverview').textContent = '';
@@ -499,6 +567,10 @@
       document.getElementById('modalOverview').textContent = 'Couldn\'t load details for this title. Please try again.';
     }
   }
+
+  document.getElementById('modalWatchBtn').addEventListener('click', () => {
+    toggleProviderPanel(document.getElementById('modalProviders'), currentModalId);
+  });
 
   function closeModal(){ modalBackdrop.classList.remove('open'); }
   document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
