@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HR OTT — Platform </title>
+<title>HR OTT — Platform</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
 
@@ -270,7 +270,7 @@
         <span class="search-icon">⌕</span>
         <input class="search-input" id="searchInput" type="text" placeholder="Search movies…" autocomplete="off">
       </div>
-      <div class="avatar">M</div>
+      <div class="avatar">H</div>
     </div>
   </nav>
 
@@ -488,20 +488,24 @@
     if(movieId) loadProviders(movieId, panel);
   }
 
-  async function findTrailerUrl(movieId){
+  async function findTrailerKey(movieId){
     try{
       const data = await fetchJSON(`/movie/${movieId}/videos`);
       const trailer = data.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || data.results.find(v => v.site === 'YouTube');
-      return trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
+      return trailer ? trailer.key : null;
     }catch(err){
       return null;
     }
   }
 
-  async function playTrailer(movieId){
-    const url = await findTrailerUrl(movieId);
-    if(url) window.open(url, '_blank', 'noopener');
-    else showError('No trailer found for this title.');
+  async function playTrailer(movieId, movieTitle){
+    const key = await findTrailerKey(movieId);
+    if(key){
+      const url = `player.html?type=youtube&id=${encodeURIComponent(key)}&title=${encodeURIComponent(movieTitle || '')}`;
+      window.open(url, '_blank', 'noopener');
+    }else{
+      showError('No trailer found for this title.');
+    }
   }
 
   function setupHero(movie){
@@ -526,7 +530,7 @@
   }
 
   document.getElementById('heroPlayBtn').addEventListener('click', () => {
-    if(currentHeroId) playTrailer(currentHeroId);
+    if(currentHeroId) playTrailer(currentHeroId, document.getElementById('heroTitle').textContent);
   });
   document.getElementById('heroInfoBtn').addEventListener('click', () => {
     if(currentHeroId) openModal(currentHeroId);
@@ -561,7 +565,7 @@
       document.getElementById('modalOverview').textContent = movie.overview || 'No overview available.';
 
       const trailerBtn = document.getElementById('modalTrailerBtn');
-      trailerBtn.onclick = () => playTrailer(movie.id);
+      trailerBtn.onclick = () => playTrailer(movie.id, movie.title);
     }catch(err){
       document.getElementById('modalTitle').textContent = 'Something went wrong';
       document.getElementById('modalOverview').textContent = 'Couldn\'t load details for this title. Please try again.';
