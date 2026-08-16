@@ -532,7 +532,7 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2026 HR OTT — Stream Movies & Series. Powered by TMDB & VsEmbed.</p>
+        <p>&copy; 2026 HR OTT — Stream Movies & Series. Powered by TMDB.</p>
     </footer>
 
     <script>
@@ -544,200 +544,40 @@
 
             // ═══════ Get URL Parameters ═══════
             const params = new URLSearchParams(window.location.search);
-            const mediaId = params.get('id');
-            const mediaType = (params.get('type') || 'movie').toLowerCase();
+            const id = params.get('id');
+            const type = (params.get('type') || 'movie').toLowerCase();
             const season = params.get('s') || '1';
             const episode = params.get('e') || '1';
 
-            if (!mediaId) {
+            if (!id) {
                 document.querySelector('.info-title').textContent = 'Error: Invalid URL';
                 document.getElementById('overviewText').textContent = 'No media ID provided. Please go back and select a title.';
                 throw new Error('No media ID in URL');
             }
 
-            // ═══════ State Variables ═══════
-            let imdbId = null;
-            let currentSource = 'vsembed';
-            let adBlockerActive = true;
+            // ═══════ Player Sources Configuration ═══════
+            let videasyUrl;
+            if (type === 'tv') {
+                videasyUrl = `https://player.videasy.net/tv/${id}/${season}/${episode}?overlay=true&color=E50914&nextEpisode=true&episodeSelector=true&autoplayNextEpisode=true`;
+            } else {
+                videasyUrl = `https://player.videasy.net/movie/${id}?overlay=true&color=E50914`;
+            }
 
-            // ═══════ Stream Sources Configuration ═══════
-            const streamSources = {
-                vsembed: {
-                    name: 'VsEmbed',
-                    badge: 'Recommended',
-                    priority: 1,
-                    getUrl: () => {
-                        if (!imdbId && mediaType === 'movie') return `https://vsembed.ru/embed/movie/${mediaId}`;
-                        if (!imdbId && mediaType === 'tv') return `https://vsembed.ru/embed/tv/${mediaId}/${season}/${episode}`;
-                        if (mediaType === 'tv') return `https://vsembed.ru/embed/tv/${imdbId}/${season}/${episode}`;
-                        return `https://vsembed.ru/embed/movie/${imdbId}`;
-                    }
-                },
-                vidsrc: {
+            const playerSources = {
+                1: {
                     name: 'VidSrc',
-                    badge: 'Quality',
-                    priority: 2,
-                    getUrl: () => {
-                        if (mediaType === 'tv') return `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`;
-                        return `https://vidsrc.to/embed/movie/${mediaId}`;
-                    }
+                    badge: 'Recommended',
+                    url: `https://vidsrc.to/embed/${type}/${id}`
                 },
-                vidsrcme: {
-                    name: 'VidSrc.me',
-                    badge: 'HD',
-                    priority: 3,
-                    getUrl: () => {
-                        if (mediaType === 'tv') return `https://vidsrc.me/embed/tv?tmdb=${mediaId}&season=${season}&episode=${episode}`;
-                        return `https://vidsrc.me/embed/movie?tmdb=${mediaId}`;
-                    }
+                2: {
+                    name: 'Videasy',
+                    badge: 'HD + NextEp',
+                    url: videasyUrl
                 }
             };
 
-            // ═══════ Ad Blocking System ═══════
-            class AdBlocker {
-                constructor() {
-                    this.adPatterns = [
-                        'ad', 'advertisement', 'banner', 'popup', 'modal',
-                        'ads', 'advert', 'sponsor', 'promo', 'overlay'
-                    ];
-                    this.adDomains = [
-                        'googlesyndication.com', 'googleadservices.com', 'doubleclick.net',
-                        'ads.google.com', 'pagead2.googlesyndication.com', 'adservice.google.com'
-                    ];
-                }
-
-                injectBlockingCSS(iframe) {
-                    try {
-                        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-                        if (!doc) return;
-
-                        const style = doc.createElement('style');
-                        style.textContent = `
-                            /* Block common ad elements */
-                            [class*="ad"], [id*="ad"],
-                            [class*="advertisement"], [id*="advertisement"],
-                            [class*="banner"], [id*="banner"],
-                            [class*="popup"], [id*="popup"],
-                            [class*="modal"], [id*="modal"],
-                            [class*="overlay"], [id*="overlay"],
-                            [class*="sponsor"], [id*="sponsor"],
-                            [class*="promotion"], [id*="promotion"],
-                            [data-ad-slot], [data-ad-client],
-                            .advertisement, #advertisement,
-                            .ad-container, #ad-container,
-                            .advert, #advert,
-                            ins[class*="adsbygoogle"],
-                            .player-ad, #player-ad,
-                            .ad-banner, #ad-banner,
-                            .ad-overlay, #ad-overlay
-                            { 
-                                display: none !important; 
-                                visibility: hidden !important;
-                                width: 0 !important;
-                                height: 0 !important;
-                            }
-
-                            /* Allow video content */
-                            video, [class*="player"], [class*="video"] {
-                                display: block !important;
-                                visibility: visible !important;
-                            }
-
-                            /* Unblock body */
-                            body { 
-                                overflow: auto !important; 
-                                pointer-events: auto !important;
-                            }
-                        `;
-                        doc.head.appendChild(style);
-                    } catch (e) {
-                        console.log('CSS injection blocked (CORS)');
-                    }
-                }
-
-                blockAdAPIs(iframe) {
-                    try {
-                        const win = iframe.contentWindow;
-                        if (!win) return;
-
-                        // Block Google Ad APIs
-                        win.googletag = {
-                            cmd: [],
-                            display: () => {},
-                            pubads: () => ({ enableSingleRequest: () => {}, disableInitialLoad: () => {} })
-                        };
-                        win.adsbygoogle = [];
-                        win.__gads = undefined;
-                        win.__gpt = undefined;
-
-                        // Block common ad networks
-                        win.GA_googleAddAttr = undefined;
-                        win.GA_googleGetAttr = undefined;
-
-                    } catch (e) {
-                        console.log('API blocking blocked (CORS)');
-                    }
-                }
-
-                monitorAndBlock(iframe) {
-                    try {
-                        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-                        if (!doc) return;
-
-                        const observer = new MutationObserver((mutations) => {
-                            mutations.forEach((mutation) => {
-                                if (mutation.addedNodes.length) {
-                                    mutation.addedNodes.forEach((node) => {
-                                        if (node.nodeType === 1) { // Element node
-                                            const element = node;
-                                            
-                                            // Check class and id
-                                            const classList = (element.className || '').toLowerCase();
-                                            const elementId = (element.id || '').toLowerCase();
-                                            
-                                            for (let pattern of this.adPatterns) {
-                                                if (classList.includes(pattern) || elementId.includes(pattern)) {
-                                                    element.style.display = 'none';
-                                                    element.style.visibility = 'hidden';
-                                                    break;
-                                                }
-                                            }
-
-                                            // Check for ad-related attributes
-                                            if (element.hasAttribute('data-ad-slot') || 
-                                                element.hasAttribute('data-ad-client') ||
-                                                element.getAttribute('data-type') === 'ad') {
-                                                element.style.display = 'none';
-                                            }
-                                        }
-                                    });
-                                }
-                            });
-                        });
-
-                        observer.observe(doc.body, {
-                            childList: true,
-                            subtree: true,
-                            attributes: true,
-                            attributeFilter: ['class', 'id', 'data-ad-slot', 'data-ad-client']
-                        });
-
-                    } catch (e) {
-                        console.log('Mutation observer blocked (CORS)');
-                    }
-                }
-
-                apply(iframe) {
-                    this.injectBlockingCSS(iframe);
-                    this.blockAdAPIs(iframe);
-                    
-                    // Wait for iframe content to load, then monitor
-                    setTimeout(() => this.monitorAndBlock(iframe), 500);
-                    setTimeout(() => this.monitorAndBlock(iframe), 1500);
-                }
-            }
-
-            const adBlocker = new AdBlocker();
+            // ═══════ State Variables ═══════
+            let currentSource = 1;
 
             // ═══════ Toast Notification ═══════
             function showToast(message, type = 'success') {
@@ -757,11 +597,11 @@
 
             // ═══════ Load Player Embed ═══════
             function loadPlayerEmbed(sourceKey) {
-                if (!streamSources[sourceKey]) return;
+                const source = playerSources[sourceKey];
+                if (!source) return;
 
                 currentSource = sourceKey;
-                const source = streamSources[sourceKey];
-                const url = source.getUrl();
+                const url = source.url;
 
                 // Remove old iframe
                 const oldIframe = document.querySelector('.player-container iframe');
@@ -781,22 +621,18 @@
 
                 iframe.onload = () => {
                     loading.classList.add('hidden');
-                    
-                    // Apply ad blocker
-                    adBlocker.apply(iframe);
-                    
-                    showToast(`Playing with ${source.name} (Ad-Blocking Active)`, 'success');
+                    showToast(`Playing with ${source.name}`, 'success');
                 };
 
                 iframe.onerror = () => {
                     showToast(`Failed to load ${source.name}`, 'error');
+                    loading.classList.remove('hidden');
                 };
 
                 // Timeout fallback
                 setTimeout(() => {
                     if (!loading.classList.contains('hidden')) {
                         loading.classList.add('hidden');
-                        adBlocker.apply(iframe);
                     }
                 }, 5000);
 
@@ -804,37 +640,8 @@
 
                 // Update button state
                 document.querySelectorAll('.server-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.source === sourceKey);
+                    btn.classList.toggle('active', btn.dataset.source === sourceKey.toString());
                 });
-            }
-
-            // ═══════ Fetch IMDB ID from TMDB ═══════
-            async function fetchImdbId() {
-                try {
-                    const endpoint = mediaType === 'movie' 
-                        ? `/movie/${mediaId}?external_ids`
-                        : `/tv/${mediaId}?external_ids`;
-
-                    const sep = endpoint.includes('?') ? '&' : '?';
-                    const url = TMDB_BASE + endpoint + sep + 'api_key=' + TMDB_KEY;
-
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error('TMDB external_ids fetch failed');
-
-                    const data = await res.json();
-                    
-                    // Get IMDB ID from external_ids
-                    if (data.external_ids?.imdb_id) {
-                        imdbId = data.external_ids.imdb_id;
-                        console.log('IMDB ID found:', imdbId);
-                        return imdbId;
-                    }
-
-                    return null;
-                } catch (error) {
-                    console.log('Could not fetch IMDB ID, using TMDB ID instead:', error);
-                    return null;
-                }
             }
 
             // ═══════ Initialize Server Buttons ═══════
@@ -842,24 +649,22 @@
                 const tabsContainer = document.getElementById('serverTabs');
                 tabsContainer.innerHTML = '';
 
-                Object.entries(streamSources)
-                    .sort((a, b) => a[1].priority - b[1].priority)
-                    .forEach(([key, source]) => {
-                        const btn = document.createElement('button');
-                        btn.className = `server-btn ${key === 'vsembed' ? 'active' : ''}`;
-                        btn.dataset.source = key;
-                        btn.innerHTML = `${source.name} <span class="server-badge">${source.badge}</span>`;
-                        btn.addEventListener('click', () => loadPlayerEmbed(key));
-                        tabsContainer.appendChild(btn);
-                    });
+                Object.entries(playerSources).forEach(([key, source]) => {
+                    const btn = document.createElement('button');
+                    btn.className = `server-btn ${key === '1' ? 'active' : ''}`;
+                    btn.dataset.source = key;
+                    btn.innerHTML = `${source.name} <span class="server-badge">${source.badge}</span>`;
+                    btn.addEventListener('click', () => loadPlayerEmbed(parseInt(key)));
+                    tabsContainer.appendChild(btn);
+                });
             }
 
             // ═══════ Fetch Media Details ═══════
             async function fetchMediaDetails() {
                 try {
-                    const endpoint = mediaType === 'movie'
-                        ? `/movie/${mediaId}?append_to_response=credits,external_ids`
-                        : `/tv/${mediaId}?append_to_response=credits,external_ids`;
+                    const endpoint = type === 'movie'
+                        ? `/movie/${id}?append_to_response=credits`
+                        : `/tv/${id}?append_to_response=credits`;
 
                     const sep = endpoint.includes('?') ? '&' : '?';
                     const url = TMDB_BASE + endpoint + sep + 'api_key=' + TMDB_KEY;
@@ -868,11 +673,6 @@
                     if (!res.ok) throw new Error('TMDB API Error');
 
                     const data = await res.json();
-
-                    // Get IMDB ID if available
-                    if (data.external_ids?.imdb_id) {
-                        imdbId = data.external_ids.imdb_id;
-                    }
 
                     // Extract data
                     const title = data.title || data.name || 'Untitled';
@@ -900,7 +700,7 @@
                         <div class="meta-item match">${match}% Match</div>
                         <div class="meta-item">${year}</div>
                         <div class="meta-item"><span class="maturity-badge">${rating}</span></div>
-                        <div class="meta-item">${runtime} ${mediaType === 'tv' ? 'min/ep' : 'min'}</div>
+                        <div class="meta-item">${runtime} ${type === 'tv' ? 'min/ep' : 'min'}</div>
                         <div class="meta-item"><i class="fas fa-hd"></i> HD</div>
                     `;
                     document.getElementById('metaRow').innerHTML = metaHtml;
@@ -910,7 +710,7 @@
                     document.getElementById('genresRow').innerHTML = genresHtml || '<div class="genre-tag">N/A</div>';
 
                     // Auto-load first server
-                    loadPlayerEmbed('vsembed');
+                    loadPlayerEmbed(1);
 
                 } catch (error) {
                     console.error('Fetch error:', error);
@@ -925,8 +725,8 @@
 
             // ═══════ Keyboard Shortcuts ═══════
             document.addEventListener('keydown', (e) => {
-                const keys = { '1': 'vsembed', '2': 'vidsrc', '3': 'vidsrcme' };
-                if (keys[e.key]) loadPlayerEmbed(keys[e.key]);
+                if (e.key === '1') loadPlayerEmbed(1);
+                if (e.key === '2') loadPlayerEmbed(2);
             });
 
             // ═══════ Initialize ═══════
