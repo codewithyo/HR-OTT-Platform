@@ -215,7 +215,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.8);
             margin-bottom: 40px;
             border: 1px solid rgba(255,255,255,0.08);
-            padding-bottom: 56.25%; /* 16:9 */
+            padding-bottom: 56.25%;
             height: 0;
         }
 
@@ -226,6 +226,8 @@
             width: 100%;
             height: 100%;
             display: none;
+            border: none;
+            background: #000;
         }
 
         /* ── Loading & Error States ── */
@@ -533,6 +535,24 @@
                 font-size: 0.7rem;
             }
         }
+
+        /* ── Auto-Play Animation ── */
+        .server-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .server-btn.loading::after {
+            content: '';
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+        }
     </style>
 </head>
 <body>
@@ -571,7 +591,7 @@
                 <div class="error-message" id="errorMessage">This source is temporarily unavailable. Please try another server.</div>
                 <button class="retry-btn" onclick="location.reload()">Retry</button>
             </div>
-            <iframe id="videoPlayer" allowfullscreen allow="autoplay; encrypted-media; fullscreen"></iframe>
+            <iframe id="videoPlayer" allowfullscreen allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>
         </div>
 
         <!-- Movie Details -->
@@ -637,6 +657,7 @@
                 vidsrc: {
                     name: 'VidSrc',
                     badge: 'Recommended',
+                    priority: 1,
                     getUrl: () => {
                         if (mediaType === 'tv') {
                             return `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`;
@@ -648,6 +669,7 @@
                 vidsrc2: {
                     name: 'VidSrc Prime',
                     badge: 'HD',
+                    priority: 2,
                     getUrl: () => {
                         if (mediaType === 'tv') {
                             return `https://vidsrc.me/embed/tv?tmdb=${mediaId}&season=${season}&episode=${episode}`;
@@ -659,6 +681,7 @@
                 videasy: {
                     name: 'Videasy',
                     badge: 'Fast',
+                    priority: 3,
                     getUrl: () => {
                         if (mediaType === 'tv') {
                             return `https://player.videasy.net/tv/${mediaId}/${season}/${episode}?overlay=true&color=E50914&nextEpisode=true&episodeSelector=true`;
@@ -670,6 +693,7 @@
                 embed: {
                     name: 'Embed.su',
                     badge: 'Alt',
+                    priority: 4,
                     getUrl: () => {
                         if (mediaType === 'tv') {
                             return `https://embed.su/embed/tv/${mediaId}/${season}/${episode}`;
@@ -684,19 +708,72 @@
             let currentSource = 'vidsrc';
             let loadTimer = null;
             let loadToken = 0;
+            let autoPlayInitiated = false;
+
+            // ═══════ Ad Blocking Script Injection ═══════
+            function injectAdBlocker(iframe) {
+                try {
+                    // Sandbox attributes to prevent ad scripts
+                    iframe.sandbox.add('allow-same-origin', 'allow-scripts', 'allow-forms', 'allow-popups', 'allow-presentation');
+
+                    // Attempt to inject CSS into iframe to hide common ad elements
+                    setTimeout(() => {
+                        try {
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                            if (iframeDoc) {
+                                // Create style element to hide ads
+                                const style = iframeDoc.createElement('style');
+                                style.textContent = `
+                                    [class*="ad"], [id*="ad"], 
+                                    [class*="banner"], [id*="banner"],
+                                    [class*="popup"], [id*="popup"],
+                                    [class*="modal"], [id*="modal"],
+                                    .advertisement, #advertisement,
+                                    .advert, #advert,
+                                    .ad-container, #ad-container,
+                                    [class*="sponsor"], [id*="sponsor"]
+                                    { display: none !important; visibility: hidden !important; }
+
+                                    body, html { overflow: auto !important; }
+                                `;
+                                iframeDoc.head.appendChild(style);
+                            }
+                        } catch (e) {
+                            console.log('Cross-origin iframe - ad blocking limited by CORS');
+                        }
+                    }, 500);
+
+                    // Block common ad networks at request level
+                    if (iframe.contentWindow) {
+                        iframe.contentWindow.addEventListener('load', () => {
+                            try {
+                                // Override common ad APIs
+                                iframe.contentWindow.googletag = undefined;
+                                iframe.contentWindow.adsbygoogle = [];
+                                iframe.contentWindow.__gads = undefined;
+                            } catch (e) {}
+                        });
+                    }
+                } catch (e) {
+                    console.log('Ad blocker injection limited by sandbox policy');
+                }
+            }
 
             // ═══════ Initialize Server Buttons ═══════
             function initServerButtons() {
                 const tabsContainer = document.getElementById('serverTabs');
                 tabsContainer.innerHTML = '';
 
-                Object.entries(streamSources).forEach(([key, source]) => {
-                    const btn = document.createElement('button');
-                    btn.className = `server-btn ${key === 'vidsrc' ? 'active' : ''}`;
-                    btn.innerHTML = `${source.name} <span class="server-badge">${source.badge}</span>`;
-                    btn.addEventListener('click', () => switchSource(key));
-                    tabsContainer.appendChild(btn);
-                });
+                Object.entries(streamSources)
+                    .sort((a, b) => a[1].priority - b[1].priority)
+                    .forEach(([key, source]) => {
+                        const btn = document.createElement('button');
+                        btn.className = `server-btn ${key === 'vidsrc' ? 'active' : ''}`;
+                        btn.dataset.source = key;
+                        btn.innerHTML = `${source.name} <span class="server-badge">${source.badge}</span>`;
+                        btn.addEventListener('click', () => switchSource(key));
+                        tabsContainer.appendChild(btn);
+                    });
             }
 
             // ═══════ Switch Stream Source ═══════
@@ -707,8 +784,13 @@
                 const loadToken_local = ++loadToken;
 
                 // Update UI
-                document.querySelectorAll('.server-btn').forEach(btn => btn.classList.remove('active'));
-                event.target.closest('.server-btn')?.classList.add('active');
+                document.querySelectorAll('.server-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.source === sourceKey);
+                    btn.classList.remove('loading');
+                });
+
+                const btnEl = document.querySelector(`[data-source="${sourceKey}"]`);
+                if (btnEl) btnEl.classList.add('loading');
 
                 const source = streamSources[sourceKey];
                 document.getElementById('loadingText').textContent = `Loading ${source.name}...`;
@@ -726,30 +808,52 @@
                     const url = source.getUrl();
                     const iframe = document.getElementById('videoPlayer');
 
+                    // Clear previous iframe
+                    iframe.src = '';
+
                     iframe.onload = () => {
                         if (loadToken_local === loadToken) {
+                            injectAdBlocker(iframe);
                             document.getElementById('loadingState').classList.add('hidden');
                             iframe.style.display = 'block';
+                            document.querySelector(`[data-source="${sourceKey}"]`)?.classList.remove('loading');
                         }
                     };
 
                     iframe.onerror = () => {
                         if (loadToken_local === loadToken) {
-                            showError(`Failed to load ${source.name}. Try another source.`);
+                            showError(`Failed to load ${source.name}. Try another server.`);
+                            document.querySelector(`[data-source="${sourceKey}"]`)?.classList.remove('loading');
                         }
                     };
 
+                    // Set iframe source
                     iframe.src = url;
 
-                    // Failsafe timeout
+                    // Failsafe timeout - show player anyway
                     loadTimer = setTimeout(() => {
                         if (loadToken_local === loadToken && document.getElementById('loadingState').style.display !== 'none') {
+                            injectAdBlocker(iframe);
                             document.getElementById('loadingState').classList.add('hidden');
                             iframe.style.display = 'block';
+                            document.querySelector(`[data-source="${sourceKey}"]`)?.classList.remove('loading');
                         }
-                    }, 4000);
+                    }, 5000);
 
                 }, 300);
+            }
+
+            // ═══════ Auto-Play First Server ═══════
+            function autoPlayFirstServer() {
+                if (autoPlayInitiated) return;
+                autoPlayInitiated = true;
+
+                // Get first server by priority
+                const firstServer = Object.entries(streamSources)
+                    .sort((a, b) => a[1].priority - b[1].priority)[0][0];
+
+                console.log(`Auto-playing with: ${firstServer}`);
+                switchSource(firstServer);
             }
 
             // ═══════ Error Handler ═══════
@@ -758,6 +862,7 @@
                 document.getElementById('errorState').classList.remove('hidden');
                 document.getElementById('errorMessage').textContent = msg;
                 document.getElementById('videoPlayer').style.display = 'none';
+                document.querySelectorAll('.server-btn').forEach(btn => btn.classList.remove('loading'));
             }
 
             // ═══════ Fetch Media Details ═══════
@@ -810,8 +915,8 @@
                     const genresHtml = genres.map(g => `<div class="genre-tag">${g.name}</div>`).join('');
                     document.getElementById('genresRow').innerHTML = genresHtml || '<div class="genre-tag">N/A</div>';
 
-                    // Load default player
-                    switchSource('vidsrc');
+                    // AUTO-PLAY FIRST SERVER
+                    autoPlayFirstServer();
 
                 } catch (error) {
                     console.error('Fetch error:', error);
@@ -822,6 +927,15 @@
             // ═══════ Nav Scroll Effect ═══════
             window.addEventListener('scroll', () => {
                 document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 30);
+            });
+
+            // ═══════ Keyboard Shortcuts ═══════
+            document.addEventListener('keydown', (e) => {
+                // 1-4 keys to switch servers
+                const keys = { '1': 'vidsrc', '2': 'vidsrc2', '3': 'videasy', '4': 'embed' };
+                if (keys[e.key]) {
+                    switchSource(keys[e.key]);
+                }
             });
 
             // ═══════ Initialize ═══════
