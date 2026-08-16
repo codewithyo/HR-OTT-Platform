@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR OTT — Player</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root{
+    --bg:#0b0b0d;
+    --red:#e50914;
+    --gold:#e4b84d;
+    --text:#f5f5f1;
+    --text-dim:#9a9aa0;
+    --font-display:'Bebas Neue', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'Space Mono', monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    background:#000; color:var(--text); font-family:var(--font-body);
+    display:flex; flex-direction:column;
+  }
+  *:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+
+  .topbar{
+    position:fixed; top:0; left:0; right:0; z-index:20;
+    display:flex; align-items:center; gap:16px; padding:16px 28px;
+    background:linear-gradient(180deg, rgba(0,0,0,.85), transparent);
+  }
+  .back-btn{
+    display:flex; align-items:center; justify-content:center;
+    width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.25);
+    background:rgba(11,11,13,.5); color:var(--text); text-decoration:none; font-size:18px; flex-shrink:0;
+  }
+  .back-btn:hover{background:rgba(229,9,20,.85); border-color:var(--red);}
+  .topbar-title{font-family:var(--font-display); font-size:20px; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
+  .stage{
+    flex:1; display:flex; align-items:center; justify-content:center; position:relative; background:#000;
+  }
+  .stage video, .stage iframe{
+    width:100%; height:100%; border:none; display:block;
+  }
+
+  .empty{
+    text-align:center; padding:40px; max-width:420px;
+  }
+  .empty-eyebrow{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:3px; color:var(--red);
+    text-transform:uppercase; margin-bottom:14px;
+  }
+  .empty-title{font-family:var(--font-display); font-size:34px; letter-spacing:1px; margin-bottom:12px;}
+  .empty-text{color:var(--text-dim); font-size:14px; line-height:1.6; margin-bottom:24px;}
+  .empty code{
+    display:block; background:#141417; padding:10px 14px; border-radius:6px; font-family:var(--font-mono);
+    font-size:12px; color:var(--gold); margin-top:8px; word-break:break-all; text-align:left;
+  }
+  .home-link{
+    display:inline-block; margin-top:8px; font-family:var(--font-body); font-weight:700; font-size:14px;
+    background:var(--text); color:#0b0b0d; padding:12px 26px; border-radius:4px; text-decoration:none;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar" id="topbar">
+    <a href="index.html" class="back-btn" aria-label="Back to browse">←</a>
+    <div class="topbar-title" id="topbarTitle"></div>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const type = params.get('type');      // 'youtube' | 'mp4'
+  const src = params.get('src');        // direct video URL, for type=mp4
+  const ytId = params.get('id');        // YouTube video id, for type=youtube
+  const title = params.get('title') || 'Now Playing';
+
+  function escapeHtml(str){
+    return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  document.getElementById('topbarTitle').textContent = title;
+  document.title = `${title} — MARQUEE`;
+
+  const stage = document.getElementById('stage');
+
+  function renderEmpty(){
+    document.getElementById('topbar').style.display = 'none';
+    stage.innerHTML = `
+      <div class="empty">
+        <div class="empty-eyebrow">No Source</div>
+        <div class="empty-title">Nothing to play</div>
+        <p class="empty-text">
+          Pass a video source through the URL. This player accepts either a YouTube id or a direct
+          video file you control the rights to — it doesn't fetch or embed content from third-party
+          "vidsrc"-style APIs.
+        </p>
+        <code>player.html?type=youtube&amp;id=VIDEO_ID&amp;title=Movie+Title</code>
+        <code>player.html?type=mp4&amp;src=https://your-host.com/video.mp4&amp;title=Movie+Title</code>
+        <a class="home-link" href="index.html">← Back to Browse</a>
+      </div>`;
+  }
+
+  function renderYouTube(id){
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&modestbranding=1`;
+    iframe.title = title;
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    iframe.allowFullscreen = true;
+    stage.appendChild(iframe);
+  }
+
+  function renderMp4(url){
+    const video = document.createElement('video');
+    video.src = url;
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.addEventListener('error', renderEmpty);
+    stage.appendChild(video);
+  }
+
+  if(type === 'youtube' && ytId){
+    renderYouTube(ytId);
+  }else if(type === 'mp4' && src){
+    try{
+      const u = new URL(src, window.location.href);
+      if(u.protocol === 'http:' || u.protocol === 'https:'){
+        renderMp4(u.href);
+      }else{
+        renderEmpty();
+      }
+    }catch(err){
+      renderEmpty();
+    }
+  }else{
+    renderEmpty();
+  }
+</script>
+</body>
+</html>
