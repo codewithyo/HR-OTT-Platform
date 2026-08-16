@@ -99,6 +99,7 @@
             font-size: 14px;
             transition: all 0.2s ease;
             border: 1px solid rgba(255,255,255,0.15);
+            cursor: pointer;
         }
 
         .btn-back:hover {
@@ -219,83 +220,80 @@
             height: 0;
         }
 
-        .player-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none;
-            border: none;
-            background: #000;
-        }
-
-        /* ── Loading & Error States ── */
-        .player-state {
+        .player-placeholder {
             position: absolute;
             inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 16px;
-            background: #000;
+            gap: 20px;
+            background: linear-gradient(135deg, #1a1a1f 0%, #2a2a32 100%);
             z-index: 10;
-            color: var(--text-muted);
         }
 
-        .player-state.hidden {
+        .player-placeholder.hidden {
             display: none;
         }
 
-        .player-state.error {
-            background: rgba(20,0,0,0.9);
-            color: var(--red);
-        }
-
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 3px solid rgba(229, 9, 20, 0.2);
-            border-top-color: var(--red);
+        .play-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--red);
             border-radius: 50%;
-            animation: spin 1.2s linear infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            box-shadow: 0 8px 30px var(--red-glow);
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
-        .state-text {
-            font-size: 0.95rem;
-            font-weight: 500;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .error-message {
+        .placeholder-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
             text-align: center;
-            max-width: 400px;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            margin-top: 8px;
         }
 
-        .retry-btn {
-            margin-top: 16px;
-            padding: 10px 24px;
+        .placeholder-subtext {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .play-button-main {
+            padding: 14px 40px;
             background: var(--red);
             border: none;
             color: white;
             border-radius: 6px;
             font-weight: 700;
+            font-size: 1rem;
             cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.2s ease;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
         }
 
-        .retry-btn:hover {
+        .play-button-main:hover {
             background: var(--red-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--red-glow);
+        }
+
+        .play-button-main.loading {
+            opacity: 0.7;
+            pointer-events: none;
         }
 
         /* ── Details Section ── */
@@ -430,6 +428,45 @@
             line-height: 1.6;
         }
 
+        /* ── Toast Notification ── */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(24, 24, 28, 0.97);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            border-left: 4px solid var(--red);
+            z-index: 9999;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.error {
+            border-left-color: #ff6b6b;
+        }
+
+        .toast.success {
+            border-left-color: var(--green);
+        }
+
         /* ── Footer ── */
         footer {
             padding: 30px clamp(20px, 3vw, 50px);
@@ -501,6 +538,21 @@
             .server-badge {
                 font-size: 0.55rem;
             }
+
+            .play-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 30px;
+            }
+
+            .placeholder-text {
+                font-size: 1rem;
+            }
+
+            .play-button-main {
+                padding: 12px 30px;
+                font-size: 0.9rem;
+            }
         }
 
         @media (max-width: 480px) {
@@ -534,24 +586,12 @@
                 padding: 4px 10px;
                 font-size: 0.7rem;
             }
-        }
 
-        /* ── Auto-Play Animation ── */
-        .server-btn.loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .server-btn.loading::after {
-            content: '';
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-left: 8px;
+            .play-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+            }
         }
     </style>
 </head>
@@ -579,19 +619,19 @@
             </div>
         </div>
 
-        <!-- Video Player -->
+        <!-- Video Player Container -->
         <div class="player-container" id="playerContainer">
-            <div class="player-state" id="loadingState">
-                <div class="spinner"></div>
-                <div class="state-text" id="loadingText">Initializing Player...</div>
+            <div class="player-placeholder" id="playerPlaceholder">
+                <div class="play-icon">
+                    <i class="fas fa-play"></i>
+                </div>
+                <div class="placeholder-text">Ready to Play</div>
+                <div class="placeholder-subtext">Select a server and click play to start streaming</div>
+                <button class="play-button-main" id="playButtonMain">
+                    <i class="fas fa-play-circle"></i>
+                    Play Now
+                </button>
             </div>
-            <div class="player-state error hidden" id="errorState">
-                <div style="font-size: 2.5rem; margin-bottom: 8px;"><i class="fas fa-exclamation-triangle"></i></div>
-                <div class="state-text">Stream Unavailable</div>
-                <div class="error-message" id="errorMessage">This source is temporarily unavailable. Please try another server.</div>
-                <button class="retry-btn" onclick="location.reload()">Retry</button>
-            </div>
-            <iframe id="videoPlayer" allowfullscreen allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>
         </div>
 
         <!-- Movie Details -->
@@ -647,8 +687,6 @@
             if (!mediaId) {
                 document.querySelector('.info-title').textContent = 'Error: Invalid URL';
                 document.getElementById('overviewText').textContent = 'No media ID provided. Please go back and select a title.';
-                document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('errorState').classList.remove('hidden');
                 throw new Error('No media ID in URL');
             }
 
@@ -706,56 +744,55 @@
 
             // ═══════ Player State ═══════
             let currentSource = 'vidsrc';
-            let loadTimer = null;
-            let loadToken = 0;
-            let autoPlayInitiated = false;
+            let playerWindow = null;
 
-            // ═══════ Ad Blocking Script Injection ═══════
-            function injectAdBlocker(iframe) {
-                try {
-                    // Sandbox attributes to prevent ad scripts
-                    iframe.sandbox.add('allow-same-origin', 'allow-scripts', 'allow-forms', 'allow-popups', 'allow-presentation');
+            // ═══════ Toast Notification ═══════
+            function showToast(message, type = 'success') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerHTML = `
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                    ${message}
+                `;
+                document.body.appendChild(toast);
 
-                    // Attempt to inject CSS into iframe to hide common ad elements
-                    setTimeout(() => {
-                        try {
-                            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                            if (iframeDoc) {
-                                // Create style element to hide ads
-                                const style = iframeDoc.createElement('style');
-                                style.textContent = `
-                                    [class*="ad"], [id*="ad"], 
-                                    [class*="banner"], [id*="banner"],
-                                    [class*="popup"], [id*="popup"],
-                                    [class*="modal"], [id*="modal"],
-                                    .advertisement, #advertisement,
-                                    .advert, #advert,
-                                    .ad-container, #ad-container,
-                                    [class*="sponsor"], [id*="sponsor"]
-                                    { display: none !important; visibility: hidden !important; }
+                setTimeout(() => {
+                    toast.style.animation = 'slideIn 0.3s ease reverse';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
 
-                                    body, html { overflow: auto !important; }
-                                `;
-                                iframeDoc.head.appendChild(style);
-                            }
-                        } catch (e) {
-                            console.log('Cross-origin iframe - ad blocking limited by CORS');
-                        }
-                    }, 500);
+            // ═══════ Open Player in New Window ═══════
+            function openPlayerWindow(sourceKey) {
+                if (!streamSources[sourceKey]) return;
 
-                    // Block common ad networks at request level
-                    if (iframe.contentWindow) {
-                        iframe.contentWindow.addEventListener('load', () => {
-                            try {
-                                // Override common ad APIs
-                                iframe.contentWindow.googletag = undefined;
-                                iframe.contentWindow.adsbygoogle = [];
-                                iframe.contentWindow.__gads = undefined;
-                            } catch (e) {}
-                        });
-                    }
-                } catch (e) {
-                    console.log('Ad blocker injection limited by sandbox policy');
+                currentSource = sourceKey;
+                const source = streamSources[sourceKey];
+                const url = source.getUrl();
+
+                // Close existing player window if open
+                if (playerWindow && !playerWindow.closed) {
+                    playerWindow.close();
+                }
+
+                // Window options for better user experience
+                const windowOptions = 'width=1280,height=720,menubar=no,toolbar=no,location=yes,status=no,scrollbars=yes,resizable=yes,top=50,left=50';
+
+                // Open new window with player URL
+                playerWindow = window.open(url, '_blank', windowOptions);
+
+                if (playerWindow) {
+                    // Focus the new window
+                    playerWindow.focus();
+                    showToast(`Opening ${source.name} in new window...`, 'success');
+
+                    // Update active button
+                    document.querySelectorAll('.server-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.source === sourceKey);
+                    });
+                } else {
+                    // Popup was blocked
+                    showToast('Popup blocked by browser. Please enable popups for this site.', 'error');
                 }
             }
 
@@ -771,98 +808,26 @@
                         btn.className = `server-btn ${key === 'vidsrc' ? 'active' : ''}`;
                         btn.dataset.source = key;
                         btn.innerHTML = `${source.name} <span class="server-badge">${source.badge}</span>`;
-                        btn.addEventListener('click', () => switchSource(key));
+                        btn.addEventListener('click', () => openPlayerWindow(key));
                         tabsContainer.appendChild(btn);
                     });
             }
 
-            // ═══════ Switch Stream Source ═══════
-            function switchSource(sourceKey) {
-                if (!streamSources[sourceKey]) return;
+            // ═══════ Play Button Handler ═══════
+            function setupPlayButton() {
+                const playBtn = document.getElementById('playButtonMain');
+                const placeholder = document.getElementById('playerPlaceholder');
 
-                currentSource = sourceKey;
-                const loadToken_local = ++loadToken;
+                playBtn.addEventListener('click', () => {
+                    playBtn.classList.add('loading');
+                    playBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening...';
 
-                // Update UI
-                document.querySelectorAll('.server-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.source === sourceKey);
-                    btn.classList.remove('loading');
+                    setTimeout(() => {
+                        openPlayerWindow(currentSource);
+                        playBtn.classList.remove('loading');
+                        playBtn.innerHTML = '<i class="fas fa-play-circle"></i> Play Now';
+                    }, 300);
                 });
-
-                const btnEl = document.querySelector(`[data-source="${sourceKey}"]`);
-                if (btnEl) btnEl.classList.add('loading');
-
-                const source = streamSources[sourceKey];
-                document.getElementById('loadingText').textContent = `Loading ${source.name}...`;
-
-                // Show loading
-                document.getElementById('loadingState').classList.remove('hidden');
-                document.getElementById('errorState').classList.add('hidden');
-                document.getElementById('videoPlayer').style.display = 'none';
-
-                if (loadTimer) clearTimeout(loadTimer);
-
-                setTimeout(() => {
-                    if (loadToken_local !== loadToken) return;
-
-                    const url = source.getUrl();
-                    const iframe = document.getElementById('videoPlayer');
-
-                    // Clear previous iframe
-                    iframe.src = '';
-
-                    iframe.onload = () => {
-                        if (loadToken_local === loadToken) {
-                            injectAdBlocker(iframe);
-                            document.getElementById('loadingState').classList.add('hidden');
-                            iframe.style.display = 'block';
-                            document.querySelector(`[data-source="${sourceKey}"]`)?.classList.remove('loading');
-                        }
-                    };
-
-                    iframe.onerror = () => {
-                        if (loadToken_local === loadToken) {
-                            showError(`Failed to load ${source.name}. Try another server.`);
-                            document.querySelector(`[data-source="${sourceKey}"]`)?.classList.remove('loading');
-                        }
-                    };
-
-                    // Set iframe source
-                    iframe.src = url;
-
-                    // Failsafe timeout - show player anyway
-                    loadTimer = setTimeout(() => {
-                        if (loadToken_local === loadToken && document.getElementById('loadingState').style.display !== 'none') {
-                            injectAdBlocker(iframe);
-                            document.getElementById('loadingState').classList.add('hidden');
-                            iframe.style.display = 'block';
-                            document.querySelector(`[data-source="${sourceKey}"]`)?.classList.remove('loading');
-                        }
-                    }, 5000);
-
-                }, 300);
-            }
-
-            // ═══════ Auto-Play First Server ═══════
-            function autoPlayFirstServer() {
-                if (autoPlayInitiated) return;
-                autoPlayInitiated = true;
-
-                // Get first server by priority
-                const firstServer = Object.entries(streamSources)
-                    .sort((a, b) => a[1].priority - b[1].priority)[0][0];
-
-                console.log(`Auto-playing with: ${firstServer}`);
-                switchSource(firstServer);
-            }
-
-            // ═══════ Error Handler ═══════
-            function showError(msg) {
-                document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('errorState').classList.remove('hidden');
-                document.getElementById('errorMessage').textContent = msg;
-                document.getElementById('videoPlayer').style.display = 'none';
-                document.querySelectorAll('.server-btn').forEach(btn => btn.classList.remove('loading'));
             }
 
             // ═══════ Fetch Media Details ═══════
@@ -915,12 +880,9 @@
                     const genresHtml = genres.map(g => `<div class="genre-tag">${g.name}</div>`).join('');
                     document.getElementById('genresRow').innerHTML = genresHtml || '<div class="genre-tag">N/A</div>';
 
-                    // AUTO-PLAY FIRST SERVER
-                    autoPlayFirstServer();
-
                 } catch (error) {
                     console.error('Fetch error:', error);
-                    showError('Failed to load media details. Please check your connection.');
+                    showToast('Failed to load media details', 'error');
                 }
             }
 
@@ -934,12 +896,25 @@
                 // 1-4 keys to switch servers
                 const keys = { '1': 'vidsrc', '2': 'vidsrc2', '3': 'videasy', '4': 'embed' };
                 if (keys[e.key]) {
-                    switchSource(keys[e.key]);
+                    openPlayerWindow(keys[e.key]);
+                }
+                // Space or Enter to play
+                if ((e.code === 'Space' || e.key === 'Enter') && e.target === document.body) {
+                    e.preventDefault();
+                    document.getElementById('playButtonMain').click();
                 }
             });
 
+            // ═══════ Close player window listener ═══════
+            setInterval(() => {
+                if (playerWindow && playerWindow.closed) {
+                    playerWindow = null;
+                }
+            }, 1000);
+
             // ═══════ Initialize ═══════
             initServerButtons();
+            setupPlayButton();
             fetchMediaDetails();
 
         })();
