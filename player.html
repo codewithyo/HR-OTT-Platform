@@ -103,6 +103,21 @@
 
         .btn-back:hover { background: var(--red); border-color: var(--red); }
 
+        .adblock-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(70, 211, 105, 0.15);
+            border: 1px solid rgba(70, 211, 105, 0.3);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--green);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .profile-avatar {
             width: 36px;
             height: 36px;
@@ -462,6 +477,7 @@
         @media (max-width: 480px) {
             .nav-right { gap: 8px; }
             .btn-back span { display: none; }
+            .adblock-status { display: none; }
             .server-tabs { gap: 6px; }
             .server-btn { padding: 7px 12px; font-size: 0.75rem; }
             .info-title { font-size: 1.4rem; }
@@ -480,6 +496,10 @@
                 <i class="fas fa-arrow-left"></i>
                 <span>Back</span>
             </a>
+            <div class="adblock-status">
+                <i class="fas fa-shield-alt"></i>
+                <span id="adblockText">Ad Block: ON</span>
+            </div>
             <div class="profile-avatar">G</div>
         </div>
     </nav>
@@ -499,7 +519,7 @@
             <div class="player-loading" id="playerLoading">
                 <div class="spinner"></div>
                 <div class="loading-text">Loading Player</div>
-                <div class="loading-subtext" id="loadingSubtext">Initializing stream...</div>
+                <div class="loading-subtext" id="loadingSubtext">Initializing stream with ad blocker...</div>
             </div>
         </div>
 
@@ -532,11 +552,160 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2026 HR OTT — Stream Movies & Series. Powered by TMDB.</p>
+        <p>&copy; 2026 HR OTT — Stream Movies & Series. Powered by TMDB with Ad Blocking Protection.</p>
     </footer>
 
     <script>
         (function() {
+            // ═══════ Advanced Ad Blocker ═══════
+            class AdvancedAdBlocker {
+                constructor() {
+                    this.blockedRequests = 0;
+                    this.adDomains = [
+                        'googlesyndication.com', 'googleadservices.com', 'doubleclick.net',
+                        'ads.google.com', 'pagead2.googlesyndication.com', 'adservice.google.com',
+                        'adwords.google.com', 'google-analytics.com', 'analytics.google.com',
+                        'googletagmanager.com', 'ads-twitter.com', 'static.ads-twitter.com',
+                        'platform.twitter.com', 'facebook.com/ads', 'facebook.net',
+                        'rubiconproject.com', 'pubmatic.com', 'openx.net',
+                        'spotxchange.com', 'adroll.com', 'criteo.com',
+                        'anetwork.net', 'serving-sys.com', 'flashtalking.com',
+                        'turn.com', 'adap.tv', 'pubsub.adap.tv',
+                        'casalemedia.com', 'scorecardresearch.com', 'comscore.com',
+                        'amazon-adsystem.com', 'taboola.com', 'outbrain.com',
+                        'sharethis.com', 'polldaddy.com', 'distene.com',
+                        'ad-delivery.net', 'ads.yahoo.com', 'ads.linkedin.com',
+                        'adsymptotic.com', 'adyoulike.com', 'affiliatex.com'
+                    ];
+
+                    this.adPatterns = [
+                        'ad', 'advertisement', 'banner', 'popup', 'modal', 'overlay',
+                        'ads', 'advert', 'sponsor', 'promo', 'commercial', 'promotional',
+                        'interstitial', 'preroll', 'midroll', 'postroll'
+                    ];
+
+                    this.init();
+                }
+
+                init() {
+                    // Intercept fetch requests
+                    this.interceptFetch();
+                    // Intercept XHR requests
+                    this.interceptXHR();
+                    // Block ads in main page
+                    this.blockPageAds();
+                }
+
+                interceptFetch() {
+                    const originalFetch = window.fetch;
+                    const self = this;
+
+                    window.fetch = function(...args) {
+                        const url = args[0]?.toString?.() || '';
+                        
+                        if (self.isAdURL(url)) {
+                            self.blockedRequests++;
+                            console.log(`[AdBlocker] Blocked fetch: ${url}`);
+                            return Promise.reject(new Error('Ad request blocked'));
+                        }
+                        
+                        return originalFetch.apply(this, args);
+                    };
+                }
+
+                interceptXHR() {
+                    const self = this;
+                    const originalOpen = XMLHttpRequest.prototype.open;
+
+                    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+                        if (self.isAdURL(url)) {
+                            self.blockedRequests++;
+                            console.log(`[AdBlocker] Blocked XHR: ${url}`);
+                            this._blocked = true;
+                            return;
+                        }
+                        
+                        return originalOpen.call(this, method, url, ...rest);
+                    };
+
+                    const originalSend = XMLHttpRequest.prototype.send;
+                    XMLHttpRequest.prototype.send = function(...args) {
+                        if (this._blocked) return;
+                        return originalSend.apply(this, args);
+                    };
+                }
+
+                isAdURL(url) {
+                    if (typeof url !== 'string') return false;
+                    const lowerUrl = url.toLowerCase();
+                    
+                    // Check ad domains
+                    for (let domain of this.adDomains) {
+                        if (lowerUrl.includes(domain)) return true;
+                    }
+                    
+                    // Check URL patterns
+                    const adPatterns = ['/ad/', '/ads/', '/banner', '/popup', '/track', '/pixel', '?ad=', '&ad='];
+                    for (let pattern of adPatterns) {
+                        if (lowerUrl.includes(pattern)) return true;
+                    }
+                    
+                    return false;
+                }
+
+                blockPageAds() {
+                    // Run initially
+                    this.removeAds();
+                    
+                    // Monitor for new ads
+                    if (window.MutationObserver) {
+                        const observer = new MutationObserver(() => this.removeAds());
+                        observer.observe(document.body, {
+                            childList: true,
+                            subtree: true,
+                            attributes: true
+                        });
+                    }
+                }
+
+                removeAds() {
+                    // Remove ad elements from main page
+                    const adSelectors = [
+                        '[class*="ad"]', '[id*="ad"]',
+                        '[class*="advertisement"]', '[id*="advertisement"]',
+                        '[class*="banner"]', '[id*="banner"]',
+                        '[class*="popup"]', '[id*="popup"]',
+                        '[class*="modal"]', '[id*="modal"]',
+                        '[class*="overlay"]', '[id*="overlay"]',
+                        '[class*="sponsor"]', '[id*="sponsor"]',
+                        'ins[class*="adsbygoogle"]',
+                        '[data-ad-slot]', '[data-ad-client]',
+                        '.advertisement', '#advertisement',
+                        '.advert', '#advert'
+                    ];
+
+                    adSelectors.forEach(selector => {
+                        try {
+                            document.querySelectorAll(selector).forEach(el => {
+                                // Don't remove video containers or player
+                                if (!el.classList.contains('player-container') && 
+                                    !el.classList.contains('video') &&
+                                    !el.id.includes('player')) {
+                                    el.style.display = 'none';
+                                }
+                            });
+                        } catch (e) {}
+                    });
+                }
+
+                getStats() {
+                    return this.blockedRequests;
+                }
+            }
+
+            // ═══════ Initialize Ad Blocker ═══════
+            const adBlocker = new AdvancedAdBlocker();
+
             // ═══════ Configuration ═══════
             const TMDB_KEY = '3a87b1db63bc74b8e3fe9266ddc75b30';
             const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -565,9 +734,11 @@
 
             const playerSources = {
                 1: {
-                    name: 'VidSrc',
+                    name: 'VidSrc SBS',
                     badge: 'Recommended',
-                    url: `https://vidsrc.to/embed/${type}/${id}`
+                    url: type === 'tv' 
+                        ? `https://vidsrc.sbs/embed/tv/${id}/${season}/${episode}`
+                        : `https://vidsrc.sbs/embed/movie/${id}`
                 },
                 2: {
                     name: 'Videasy',
@@ -580,11 +751,11 @@
             let currentSource = 1;
 
             // ═══════ Toast Notification ═══════
-            function showToast(message, type = 'success') {
+            function showToast(message, toastType = 'success') {
                 const toast = document.createElement('div');
-                toast.className = `toast ${type}`;
+                toast.className = `toast ${toastType}`;
                 toast.innerHTML = `
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                    <i class="fas fa-${toastType === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
                     ${message}
                 `;
                 document.body.appendChild(toast);
@@ -609,7 +780,7 @@
 
                 // Show loading
                 const loading = document.getElementById('playerLoading');
-                document.getElementById('loadingSubtext').textContent = `Loading ${source.name}...`;
+                document.getElementById('loadingSubtext').textContent = `Loading ${source.name} with ad blocker active...`;
                 loading.classList.remove('hidden');
 
                 // Create new iframe
@@ -618,10 +789,11 @@
                 iframe.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture; accelerometer';
                 iframe.setAttribute('loading', 'lazy');
                 iframe.setAttribute('referrerpolicy', 'no-referrer');
+                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-presentation');
 
                 iframe.onload = () => {
                     loading.classList.add('hidden');
-                    showToast(`Playing with ${source.name}`, 'success');
+                    showToast(`Playing with ${source.name} (Ad Blocker Active) - ${adBlocker.getStats()} ads blocked`, 'success');
                 };
 
                 iframe.onerror = () => {
@@ -728,6 +900,12 @@
                 if (e.key === '1') loadPlayerEmbed(1);
                 if (e.key === '2') loadPlayerEmbed(2);
             });
+
+            // ═══════ Update Ad Block Status ═══════
+            setInterval(() => {
+                const blockedCount = adBlocker.getStats();
+                document.getElementById('adblockText').textContent = `Ad Block: ON (${blockedCount})`;
+            }, 2000);
 
             // ═══════ Initialize ═══════
             initServerButtons();
